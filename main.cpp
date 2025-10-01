@@ -1,15 +1,43 @@
 #include <iostream>
 #include "bank_customer.h"
 #include "buyer.h"
+#include "seller.h"
 
-enum PrimaryPrompt{LOGIN, REGISTER, EXIT};
+enum PrimaryPrompt
+{
+    LOGIN,
+    REGISTER,
+    EXIT
+};
+
+enum LoginPrompt
+{
+    CHECK_STATUS,
+    UPGRADE_TO_SELLER,
+    BACK_LOGIN
+};
+
+enum RegisterPrompt
+{
+    CREATE_BUYER,
+    CREATE_SELLER,
+    BACK_REGISTER
+};
 
 using namespace std;
 
-int main() {
-    //create a loop prompt 
+int main()
+{
+    Buyer *loggedInBuyer = nullptr;
+    Seller *loggedInSeller = nullptr;
+
+    // create a loop prompt
     PrimaryPrompt prompt = LOGIN;
-    while (prompt != EXIT) {
+    LoginPrompt loginPrompt = CHECK_STATUS;
+    RegisterPrompt regPrompt = CREATE_BUYER;
+
+    while (prompt != EXIT)
+    {
         cout << "Select an option: " << endl;
         cout << "1. Login" << endl;
         cout << "2. Register" << endl;
@@ -17,81 +45,207 @@ int main() {
         int choice;
         cin >> choice;
         prompt = static_cast<PrimaryPrompt>(choice - 1);
-        switch (prompt) {
-            case LOGIN:
-                cout << "Login selected." << endl;
-                /* if Login is selected, based on authority then provide options:
-                assume user is logged in as Buyer for now
-                1. Chek Account Status (will display if user is Buyer or Seller or both and linked banking account status)
-                Will display Buyer, Seller and Banking Account details
-                2. Upgrade Account to Seller
-                Will prompt user to enter Seller details and create a Seller account linked to Buyer account
-                Will reject if a user dont have a banking account linked
-                3. Create Banking Account (if not already linked), will be replaced with banking functions
-                Must provides: initial deposit amount, Address, Phone number, Email
-                Banking functions will provides: Balance checking, Transaction History, Deposit, Withdraw
-                4. Browse Store Functionality
-                Will display all stores initially
-                Need to select a store to browse each store inventory
-                Will display all items in the store inventory
-                After selecting an item, will display item details and option to add to cart
-                After adding to cart, will notify user item is added to cart
-                5. Order Functionality
-                Will display all items in cart
-                Will provide option to remove item from cart
-                Will provide option to checkout
-                After checkout invoide will be generated (will go to payment functionality)
-                6. Payment Functionality
-                Will display all listed invoices
-                Pick an invoice to pay
-                Will display invoice details and total amount
-                Will provide option to pay invoice
-                Payment is done through confirmation dialogue
-                In confirmation dialogue, will display account balance as precursor
-                User will need to manually enter invoice id to pay
-                After paying balance will be redacted from buyer and added to the responding seller account
-                After payment, order status will be changed to paid
-                7. Logout (return to main menu)
-                Display confirmation dialogue
-                If confirmed, return to main menu
-                If not, return to Buyer menu
-                8. Delete Account (remove both Buyer and Seller account and relevant banking account)
-                Display confirmation dialogue
-                If confirmed, delete account and return to main menu
-                If not, return to Buyer menu
-                assume user is logged in as Seller for now
-                9. Check Inventory
-                10. Add Item to Inventory
-                11. Remove Item from Inventory
-                12. View Orders (will display all orders placed to this seller
-                Only orders with paid status will be listed
-                Order details will listing items, quantity, total amount, buyer details, order status (paid, cancelled, completed)
-                extra functions
-                9. Exit to main Menu
-                10. Exit Program
-                **/
+
+        switch (prompt)
+        {
+        case LOGIN:
+        {
+            if (!loggedInBuyer)
+            {
+                cout << "No account registered yet. Please register first.\n";
                 break;
-            case REGISTER:
-                cout << "Register selected." << endl;
-                /* if register is selected then went throuhh registration process:
-                1. Create a new Buyer Account
-                Must provides: Name, Home Address, Phone number, Email
-                2. Option to create a Seller Account (will be linked to Buyer account)
-                Must provides: Store Name, Store Address, Store Phone number, Store Email
-                After finished immediately logged in as Buyer/Seller
-                */
-                break;
-            case EXIT:
-                cout << "Exiting." << std::endl;
-                break;
-            default:
-                cout << "Invalid option." << endl;
-                break;
+            }
+
+            loginPrompt = CHECK_STATUS;
+
+            while (loginPrompt != BACK_LOGIN)
+            {
+                cout << "\n=== Login Menu ===\n";
+                cout << "1. Check Account Status\n";
+                cout << "2. Upgrade Account to Seller\n";
+                cout << "3. Back\n";
+
+                int loginChoice;
+                cin >> loginChoice;
+                loginPrompt = static_cast<LoginPrompt>(loginChoice - 1);
+
+                switch (loginPrompt)
+                {
+                case CHECK_STATUS:
+                    cout << "=== Account Status ===\n";
+                    loggedInBuyer->printInfo();
+                    if (loggedInSeller)
+                    {
+                        loggedInSeller->printInfo();
+                    }
+                    break;
+                case UPGRADE_TO_SELLER:
+                {
+                    cout << "=== Upgrade to Seller ===\n";
+
+                    if (loggedInSeller)
+                    {
+                        cout << "You already have a Seller account.\n";
+                        break;
+                    }
+
+                    int sellerId = static_cast<int>(rand());
+                    string storeName, storeAddress, storePhone, storeEmail;
+
+                    cin.ignore();
+                    cout << "Enter Store Name: ";
+                    getline(cin, storeName);
+                    cout << "Enter Store Address: ";
+                    getline(cin, storeAddress);
+                    cout << "Enter Store Phone Number: ";
+                    getline(cin, storePhone);
+                    cout << "Enter Store Email: ";
+                    getline(cin, storeEmail);
+
+                    static Seller newSeller(
+                        *loggedInBuyer,
+                        sellerId,
+                        loggedInBuyer->getName(),
+                        storeName,
+                        storeAddress,
+                        storePhone,
+                        storeEmail);
+
+                    loggedInSeller = &newSeller;
+
+                    cout << "Upgrade successful! You are now also a Seller.\n";
+                    break;
+                }
+                case BACK_LOGIN:
+                    cout << "Back to main menu.\n";
+                    loginPrompt = BACK_LOGIN;
+                    break;
+                default:
+                    cout << "Invalid option.\n";
+                    break;
+                }
+            }
+            break;
         }
+        case REGISTER:
+        {
+            regPrompt = CREATE_BUYER;
+
+            while (regPrompt != BACK_REGISTER)
+            {
+                cout << "Register selected.\n";
+                cout << "Select an option: " << endl;
+                cout << "1. Create Buyer Account" << endl;
+                cout << "2. Create Seller Account" << endl;
+                cout << "3. Back" << endl;
+
+                int regChoice;
+                cin >> regChoice;
+
+                regPrompt = static_cast<RegisterPrompt>(regChoice - 1);
+
+                switch (regPrompt)
+                {
+                case CREATE_BUYER:
+                {
+                    if (loggedInBuyer)
+                    {
+                        cout << "You already have a Buyer account. Please login instead.\n";
+                        break;
+                    }
+
+                    int id = static_cast<int>(rand());
+                    string name, address, phone, email;
+                    double balance;
+
+                    cout << "=== Create Buyer Account ===\n";
+
+                    cin.ignore();
+                    cout << "Enter Name: ";
+                    getline(cin, name);
+                    cout << "Enter Home Address: ";
+                    getline(cin, address);
+                    cout << "Enter Phone Number: ";
+                    getline(cin, phone);
+                    cout << "Enter Email: ";
+                    getline(cin, email);
+                    cout << "Enter Balance: ";
+                    cin >> balance;
+
+                    static Buyer newBuyer(id, name, address, phone, email);
+
+                    loggedInBuyer = &newBuyer;
+                    loggedInSeller = nullptr;
+                    cout << "Buyer registration successful! You are now logged in as Buyer.\n";
+                    break;
+                }
+                case CREATE_SELLER:
+                {
+                    if (loggedInSeller)
+                    {
+                        cout << "You already have a Seller account. Please login instead.\n";
+                        break;
+                    }
+
+                    cout << "Create Seller Account selected." << endl;
+                    if (!loggedInBuyer)
+                    {
+                        cout << "Please create a Buyer account first.\n";
+                        break;
+                    }
+
+                    cout << "=== Create Seller Account ===\n";
+                    int sellerId = static_cast<int>(rand());
+                    string sellerName, storeName, storeAddress, storePhone, storeEmail;
+
+                    cin.ignore();
+                    cout << "Enter Your Name: ";
+                    getline(cin, sellerName);
+                    cout << "Enter Store Name: ";
+                    getline(cin, storeName);
+                    cout << "Enter Store Address: ";
+                    getline(cin, storeAddress);
+                    cout << "Enter Store Phone Number: ";
+                    getline(cin, storePhone);
+                    cout << "Enter Store Email: ";
+                    getline(cin, storeEmail);
+
+                    static Seller newSeller(
+                        *loggedInBuyer,
+                        sellerId,
+                        sellerName,
+                        storeName,
+                        storeAddress,
+                        storePhone,
+                        storeEmail);
+
+                    loggedInSeller = &newSeller;
+                    cout << "Seller registration successful! You are now logged in as Seller.\n";
+                    break;
+                }
+                case BACK_REGISTER:
+                {
+                    cout << "Back selected.\n";
+                    regPrompt = BACK_REGISTER;
+                    break;
+                }
+                default:
+                    cout << "Invalid option.\n";
+                    break;
+                }
+            }
+            break;
+        }
+        case EXIT:
+            cout << "Exiting.\n";
+            break;
+        default:
+            cout << "Invalid option.\n";
+            break;
+        }
+
         cout << endl;
     }
 
-    //BankCustomer customer1(1, "Alice", 1000.0);
-    //Buyer buyer1(1, customer1.getName(), customer1);
-    return 1;
+    return 0;
 }
